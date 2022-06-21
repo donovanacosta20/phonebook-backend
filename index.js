@@ -1,35 +1,17 @@
+require('dotenv').config();
 const express = require('express');
-const morgan = require('morgan')
-const app = express();
+const morgan = require('morgan');
+const Person = require('./models/person');
 
-let persons = [
-    {
-        id:1,
-        name: 'Arto Hellas',
-        number: '040-123456'
-    },
-    {
-        id:2,
-        name: 'Ada Lovelance',
-        number: '39-44-5323523'
-    },
-    {
-        id:3,
-        name: 'Dan Abramov',
-        number: '12-43-234345'
-    },
-    {
-        id:4,
-        name: 'Mary Poppendick',
-        number: '39-23-6423122'
-    }
-];
+const app = express();
 
 morgan.token('body', function (req, res) {
      return `{"name:" ${req.body.name}, "number:" ${req.body.number}}`
 });
 
-app.use(express.json())
+app.use(express.json());
+app.use(express.static('build'));
+
 app.use(morgan(function (tokens, req, res) {
     return [
       tokens.method(req, res),
@@ -40,11 +22,12 @@ app.use(morgan(function (tokens, req, res) {
       tokens['body'](req, res),
     ].join(' ')
   }));
-app.use(express.static('build'));
 
 //GetALL
 app.get('/api/persons', (request, response) => {
+   Person.find({}).then(persons => {
     response.json(persons);
+   });
 });
 
 app.get('/info', (request, response) => {
@@ -75,29 +58,28 @@ app.delete('/api/persons/:id', (request, response) => {
 });
 
 //Post
-
 app.post('/api/persons', (request, response) => {
 
     const newPerson = request.body;
 
-    if(newPerson.name.length === 0 || newPerson.number.length === 0) {
-        return response.status(400).json({
-            error: 'The name or number is missing'
+    if(newPerson.name.length > 0 &&  newPerson.number.length > 0) {
+        const objectPerson = new Person({
+            name: newPerson.name,
+            number: newPerson.number
+         });
+        
+            objectPerson.save().then(savePerson => {
+            response.json(savePerson);
         });
-    }
+    } 
+      
+    return response.status(400).json({
+        error: 'The name or number is missing'
+    });
 
-    if(persons.some(person => person.name === newPerson.name)) {
-        return response.status(400).json({
-            error: 'The name already exists in the phonebook'
-        });
-    }
 
-    newPerson.id = Math.random() + 12394;
-    
-    persons = persons.concat(newPerson)
+});  
 
-    response.json(newPerson);
-});
 
 
 const PORT= process.env.PORT || 3001;
