@@ -12,7 +12,6 @@
     "deploy:full": "npm run build:ui && git add . git commit -m uibuild && npm run deploy",
     "logs": "heroku logs --tail"
   },
-  "proxy": "http://localhost:3001",
   "author": "Donovan Acosta",
   "license": "MIT",
   "dependencies": {
