@@ -1,0 +1,25 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:ui": "rm -rf build && cd ~/workstation/fullstackopen/'part 2'/phonebook && npm run build --prod && cp -r build ~/workstation/'fullstackopen backend'/phonebook",
+    "deploy": "git push heroku main",
+    "deploy:full": "npm run build:ui && git add . git commit -m uibuild && npm run deploy",
+    "logs": "heroku logs --tail"
+  },
+  "proxy": "http://localhost:3001",
+  "author": "Donovan Acosta",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.1",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.16"
+  }
+}
