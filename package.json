@@ -21,5 +21,13 @@
   },
   "devDependencies": {
     "nodemon": "^2.0.16"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donovanacosta20/phonebook-backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/donovanacosta20/phonebook-backend/issues"
+  },
+  "homepage": "https://github.com/donovanacosta20/phonebook-backend#readme"
 }
