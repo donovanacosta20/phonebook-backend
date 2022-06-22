@@ -1,17 +1,19 @@
-require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
-const Person = require('./models/person');
-
+const cors =  require('cors');
 const app = express();
 
-morgan.token('body', function (req, res) {
-     return `{"name:" ${req.body.name}, "number:" ${req.body.number}}`
-});
-
-app.use(express.json());
 app.use(express.static('build'));
 
+require('dotenv').config();
+const Person = require('./models/person');
+
+app.use(express.json());
+app.use(cors());
+
+morgan.token('body', function (req, res) {
+    return `{"name:" ${req.body.name}, "number:" ${req.body.number}}`
+});
 app.use(morgan(function (tokens, req, res) {
     return [
       tokens.method(req, res),
@@ -23,13 +25,33 @@ app.use(morgan(function (tokens, req, res) {
     ].join(' ')
   }));
 
+
+app.get('/', (request, response) => {
+    response.send('<h1>Hello WORLD!</h1>')
+})
+
 //GetALL
 app.get('/api/persons', (request, response) => {
    Person.find({}).then(persons => {
-    response.json(persons);
-   });
+        response.json(persons);   
+    });
 });
 
+//GET only one person
+app.get('/api/persons/:id', (request, response, next) => {
+    Person.findById(request.params.id)
+    .then(result => {
+        if(result) {
+            response.json(result);
+        }else {
+            response.status(404).end()
+        }
+       })
+       .catch(error => next(error));
+});
+
+
+//INFO
 app.get('/info', (request, response) => {
 
     const lengthPhoneBook = persons.length;
@@ -40,49 +62,79 @@ app.get('/info', (request, response) => {
 
 });
 
-//GET only one person
-app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id);
-    const person = persons.find(person => person.id === id);
+//POST
+app.post('/api/persons', (request, response) => {
 
-    person ? response.json(person) : response.status(404).end();
+    const body = request.body;
+    console.log('debug:', body);
+
+    if(body.name.length === 0 || body.number.length === 0) {
+        return response.status(400).json({
+            error: 'The name or number is missing'
+        });
+    }
+
+    const objectPerson = new Person({
+        name: body.name,
+        number: body.number
+    });
+
+    objectPerson.save()
+    .then(savePerson => {
+        response.json(savePerson);
+    })
+    .catch(error => {
+        response.status(400).json(error.message);
+    });
+    
 })
 
-//Delete
-app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id);
-
-    persons = persons.filter(person => person.id !== id);
-
-    response.status(204).end();
-});
-
-//Post
-app.post('/api/persons', (request, response) => {
+//PUT
+app.put('/api/persons/:id', (request, response) => {
 
     const newPerson = request.body;
 
-    if(newPerson.name.length > 0 &&  newPerson.number.length > 0) {
-        const objectPerson = new Person({
-            name: newPerson.name,
-            number: newPerson.number
-         });
-        
-            objectPerson.save().then(savePerson => {
-            response.json(savePerson);
-        });
+    const person = {
+        name: newPerson.name,
+        number: newPerson.number
+    }
+
+   Person.findByIdAndUpdate(request.params.id, person, {new: true})
+   .then(updateNote => {
+    response.json(updateNote);
+   })
+   .catch(error => next(error))
+});
+
+// //Delete
+app.delete('/api/persons/:id', (request, response) => {
+    Person.findByIdAndRemove(request.params.id)
+    .then(result => {
+        response.status(204).end();
+    })
+    .catch(error => console.log(error));
+});
+
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({ error: 'unknown endpoint' })
+  }
+  
+  // handler of requests with unknown endpoint
+app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+  
+    if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'malformatted id' })
     } 
-      
-    return response.status(400).json({
-        error: 'The name or number is missing'
-    });
+  
+    next(error)
+  }
+  
+app.use(errorHandler);
 
-
-});  
-
-
-
-const PORT= process.env.PORT || 3001;
+const PORT= process.env.PORT;
 
 app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`);
